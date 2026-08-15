@@ -1,12 +1,13 @@
-# FinSight Mini — Docker Space for Hugging Face
+# FinSight Mini — deployed container (Render)
 #
-# HF Spaces free tier has no GPU and no local Ollama daemon, so this
+# The free tier host has no GPU and no local Ollama daemon, so this
 # container always runs with LLM_PROVIDER=groq (set below). Your local
 # WSL dev flow is unaffected — this Dockerfile is only used for the
-# deployed Space; locally you still run `docker compose up -d` +
+# deployed service; locally you still run `docker compose up -d` +
 # `uvicorn api.main:app --reload` against Ollama as usual.
 #
-# Required HF Space secret: GROQ_API_KEY
+# Required environment variable (set in Render dashboard): GROQ_API_KEY
+# Render also injects PORT at runtime — read dynamically below, not hardcoded.
 
 FROM python:3.11-slim
 
@@ -36,6 +37,6 @@ COPY static/ ./static/
 COPY data/lancedb/ ./data/lancedb/
 COPY data/bm25_index.pkl ./data/bm25_index.pkl
 
-# HF Spaces expects the app to listen on port 7860.
+
 EXPOSE 8000
 CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}
