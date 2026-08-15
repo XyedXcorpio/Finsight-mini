@@ -1,0 +1,18 @@
+.venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Offline ingestion outputs not needed at query time except the two
+# artifacts explicitly COPYed in the Dockerfile (lancedb/, bm25_index.pkl)
+data/bronze/
+data/silver/
+data/raw_filings/
+
+# MinIO local dev volume, docker-compose state
+minio-data/
+docker-compose.override.yml
+
+.env
+*.log

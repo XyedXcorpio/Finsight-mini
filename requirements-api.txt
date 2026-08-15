@@ -1,0 +1,25 @@
+# requirements-api.txt
+#
+# Slim dependency set for the DEPLOYED query-time API only (Docker Space).
+# Deliberately excludes the offline ingestion stack (pyspark, delta-spark,
+# sec-edgar-downloader, minio, etc.) from Weekends 1-2 — those never run
+# inside the deployed container, only in your local WSL environment.
+#
+# Adjust versions to match what's already verified working in your local
+# .venv (check with `pip freeze | grep -i <package>`), since this list is
+# written from expected package names, not pinned against your actual env.
+
+fastapi
+uvicorn[standard]
+pydantic
+
+langgraph
+langchain-core
+
+lancedb
+rank-bm25
+sentence-transformers
+
+groq
+loguru
+python-dotenv

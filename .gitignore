@@ -1,0 +1,42 @@
+# Data lake — ignore everything except the query-time artifacts the
+# deployed app actually needs (LanceDB index + BM25 pickle). Bronze/
+# Silver/raw filings are large and rebuildable from the ingestion
+# pipeline, not needed for the deployed API.
+data/*
+!data/.gitkeep
+!data/lancedb/
+!data/lancedb/**
+!data/bm25_index.pkl
+
+# Vector index (rebuildable, large) — EXCEPT the one under data/lancedb/,
+# which is deliberately tracked for deployment (see Data lake section above)
+knowledge/index/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Spark
+spark-warehouse/
+metastore_db/
+derby.log
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Secrets
+.env
+*.pem
+*.key
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Logs
+*.log

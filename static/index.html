@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FinSight Mini</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #121820;
+    --panel-border: #232c38;
+    --text: #e6edf3;
+    --text-dim: #8b98a5;
+    --accent: #4fd1c5;
+    --accent-dim: #2c7a72;
+    --warn: #e5b567;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 80px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  header h1 {
+    margin: 0 0 6px;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+  .container {
+    width: 100%;
+    max-width: 720px;
+  }
+  form {
+    display: flex;
+    gap: 8px;
+  }
+  input[type="text"] {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--accent-dim); }
+  button {
+    background: var(--accent);
+    color: #06201d;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.88; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .examples button.example {
+    background: transparent;
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+  .examples button.example:hover {
+    color: var(--text);
+    border-color: var(--accent-dim);
+  }
+
+  #result { margin-top: 28px; display: none; }
+
+  .badges {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+  }
+  .badge.ticker { color: var(--accent); border-color: var(--accent-dim); }
+  .badge.warn { color: var(--warn); border-color: #6b5730; }
+
+  .answer-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  .sources-toggle {
+    margin-top: 18px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sources-toggle:hover { color: var(--text); }
+  .sources-toggle .chev { transition: transform 0.15s; }
+  .sources-toggle.open .chev { transform: rotate(90deg); }
+
+  #sources { display: none; margin-top: 12px; }
+  .source {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+  }
+  .source-meta {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    margin-bottom: 8px;
+  }
+  .source-text {
+    color: var(--text);
+    line-height: 1.5;
+    max-height: 5.4em;
+    overflow: hidden;
+    position: relative;
+  }
+  .source-text.expanded { max-height: none; }
+  .expand-link {
+    color: var(--accent);
+    font-size: 0.75rem;
+    cursor: pointer;
+    margin-top: 6px;
+    display: inline-block;
+  }
+
+  .status { color: var(--text-dim); margin-top: 20px; font-size: 0.9rem; }
+  .error { color: #e57373; margin-top: 20px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FinSight Mini</h1>
+  <p>Agentic RAG over SEC 10-Q filings &mdash; NVDA · AMD · INTC · TSLA · AAPL</p>
+</header>
+
+<div class="container">
+  <form id="query-form">
+    <input type="text" id="question" placeholder="e.g. What supply chain risks does NVIDIA mention?" autocomplete="off" />
+    <button type="submit" id="submit-btn">Ask</button>
+  </form>
+
+  <div class="examples">
+    <button type="button" class="example" data-q="What supply chain risks does NVIDIA mention?">NVDA supply chain risks</button>
+    <button type="button" class="example" data-q="How did AMD's revenue change year over year?">AMD revenue trend</button>
+    <button type="button" class="example" data-q="What risks are common across the semiconductor companies?">Cross-company risks</button>
+  </div>
+
+  <div id="status" class="status"></div>
+  <div id="error" class="error"></div>
+
+  <div id="result">
+    <div class="badges" id="badges"></div>
+    <div class="answer-card" id="answer"></div>
+
+    <button class="sources-toggle" id="sources-toggle">
+      <span class="chev">&#9656;</span>
+      <span id="sources-count">Sources</span>
+    </button>
+    <div id="sources"></div>
+  </div>
+</div>
+
+<script>
+const form = document.getElementById('query-form');
+const questionInput = document.getElementById('question');
+const submitBtn = document.getElementById('submit-btn');
+const statusEl = document.getElementById('status');
+const errorEl = document.getElementById('error');
+const resultEl = document.getElementById('result');
+const badgesEl = document.getElementById('badges');
+const answerEl = document.getElementById('answer');
+const sourcesEl = document.getElementById('sources');
+const sourcesToggle = document.getElementById('sources-toggle');
+const sourcesCount = document.getElementById('sources-count');
+
+document.querySelectorAll('.example').forEach(btn => {
+  btn.addEventListener('click', () => {
+    questionInput.value = btn.dataset.q;
+    form.dispatchEvent(new Event('submit'));
+  });
+});
+
+sourcesToggle.addEventListener('click', () => {
+  const open = sourcesEl.style.display === 'block';
+  sourcesEl.style.display = open ? 'none' : 'block';
+  sourcesToggle.classList.toggle('open', !open);
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const question = questionInput.value.trim();
+  if (!question) return;
+
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Thinking through the filings...';
+  errorEl.textContent = '';
+  resultEl.style.display = 'none';
+  sourcesEl.style.display = 'none';
+  sourcesToggle.classList.remove('open');
+
+  try {
+    const res = await fetch('/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Request failed (${res.status})`);
+    }
+
+    const data = await res.json();
+    renderResult(data);
+  } catch (err) {
+    errorEl.textContent = `Error: ${err.message}`;
+  } finally {
+    statusEl.textContent = '';
+    submitBtn.disabled = false;
+  }
+});
+
+function renderResult(data) {
+  badgesEl.innerHTML = '';
+
+  const tickerBadge = document.createElement('span');
+  tickerBadge.className = 'badge ticker';
+  tickerBadge.textContent = data.ticker ? `Ticker: ${data.ticker}` : 'Cross-company';
+  badgesEl.appendChild(tickerBadge);
+
+  if (data.low_confidence) {
+    const warnBadge = document.createElement('span');
+    warnBadge.className = 'badge warn';
+    warnBadge.textContent = 'Low confidence';
+    badgesEl.appendChild(warnBadge);
+  }
+
+  if (data.retries_used > 0) {
+    const retryBadge = document.createElement('span');
+    retryBadge.className = 'badge';
+    retryBadge.textContent = `Retries: ${data.retries_used}`;
+    badgesEl.appendChild(retryBadge);
+  }
+
+  answerEl.textContent = data.answer;
+
+  sourcesCount.textContent = `Sources (${data.sources.length})`;
+  sourcesEl.innerHTML = '';
+  data.sources.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'source';
+    div.innerHTML = `
+      <div class="source-meta">
+        <span>${s.ticker || 'unknown'} &middot; ${s.accession_number || 'n/a'} &middot; ${s.found_by}</span>
+        <span>score ${s.rrf_score.toFixed(4)}</span>
+      </div>
+      <div class="source-text" id="source-text-${i}">${escapeHtml(s.chunk_text)}</div>
+      <span class="expand-link" data-target="source-text-${i}">Show more</span>
+    `;
+    sourcesEl.appendChild(div);
+  });
+
+  document.querySelectorAll('.expand-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const target = document.getElementById(link.dataset.target);
+      const expanded = target.classList.toggle('expanded');
+      link.textContent = expanded ? 'Show less' : 'Show more';
+    });
+  });
+
+  resultEl.style.display = 'block';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>

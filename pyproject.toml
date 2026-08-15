@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finsight-mini"
+version = "0.1.0"
+description = "A small, real agentic RAG system over SEC filings — built for learning, not a capstone."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+
+# Trimmed hard from the original plan. Cut: MLflow, Ragas, Streamlit, MCP SDK,
+# streaming-specific deps. Kept: everything that directly builds the
+# retrieval + agent loop, plus a thin FastAPI serving layer.
+dependencies = [
+  # --- Distributed processing & storage (Weekend 1 — one-shot batch, no streaming) ---
+  "pyspark==3.5.3",
+  "delta-spark==3.2.0",
+  "boto3>=1.34,<2",
+
+  # --- LLM & agents ---
+  "langchain-core==0.3.15",
+  "langgraph==0.2.45",
+  "ollama==0.3.3",          # local inference client
+  "groq==0.11.0",           # free hosted inference for the deployed demo
+
+  # --- Embeddings & vector store ---
+  "sentence-transformers==3.2.1",
+  "lancedb==0.13.0",
+  "rank-bm25==0.2.2",
+
+  # --- Data sources ---
+  "sec-edgar-downloader==5.0.3",
+  "pyrate-limiter>=3.6.0,<4.0.0",  # 5.0.3 needs 3.6+, but 4.x removed raise_when_fail param
+  "beautifulsoup4==4.12.3",
+  "lxml==5.3.0",
+
+  # --- Serving (FastAPI + plain HTML/JS, no Streamlit) ---
+  "fastapi==0.115.4",
+  "uvicorn[standard]==0.32.0",
+  "pydantic==2.9.2",
+  "jinja2==3.1.4",
+
+  # --- Utilities ---
+  "python-dotenv==1.0.1",
+  "loguru==0.7.2",
+  "tenacity==9.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.3.3",
+  "ruff==0.7.2",
+  "ipykernel==6.29.5",
+]
+
+[tool.setuptools.packages.find]
+include = ["common*", "pipelines*", "knowledge*", "agents*", "app*"]
+exclude = ["data*", "notebooks*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

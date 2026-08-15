@@ -1,0 +1,67 @@
+# FinSight Mini — local infrastructure
+#
+# Two services only:
+#   - MinIO   : S3-compatible storage, holds the Delta tables (Bronze/Silver)
+#   - Ollama  : local LLM inference for development
+#
+# No MLflow (cut — replaced by a plain markdown eval table).
+# No streaming services (cut — ingestion is one-shot batch).
+#
+# The deployed version (Hugging Face Spaces) uses Groq's API instead of
+# Ollama, and bundles a static LanceDB snapshot instead of running MinIO —
+# see app/Dockerfile for that build.
+
+services:
+
+  minio:
+    image: minio/minio:latest
+    container_name: finsight-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: finsight-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb -p local/finsight-bronze;
+      mc mb -p local/finsight-silver;
+      echo 'Buckets ready';
+      "
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: finsight-ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_KEEP_ALIVE=30m
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  minio_data:
+  ollama_data:
