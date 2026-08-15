@@ -23,6 +23,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements-api.txt .
 RUN pip install --no-cache-dir -r requirements-api.txt
 
+# Pre-download the embedding model into the image at build time. Without
+# this, SentenceTransformer() tries to fetch model weights from HF Hub on
+# the FIRST query in a fresh container — Render's container has no
+# persistent cache between deploys, so every cold start would hit the
+# network, and unauthenticated HF Hub requests are rate-limited enough to
+# cause outright request failures (502s) rather than just added latency.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
+
 # Force the hosted LLM provider — no local model available on Spaces.
 ENV LLM_PROVIDER=groq
 
